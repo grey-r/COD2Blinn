@@ -8,7 +8,7 @@ except ImportError:
                 install it from http://pypi.python.org/pypi/Pillow
                 or run pip install Pillow.""")
 
-def exec5Stack(imageAr,outDir="./"):
+def execCamo(imageAr,outDir="./",fn="gun"):
     #prepare output directory
     finalOutDir = os.path.join(outDir,"out/")
     if not os.path.exists(finalOutDir):
@@ -200,4 +200,5 @@ if __name__ == "__main__":
     else:
         print("WARNING: MISSING NORMALS")
         n=Image.new("RGB", (512,512), color=(128,128,255))
-    exec5Stack([d,m,n,o,s],outDir=directory)
+    print("Running for " + baseDecomp[0].lower()[0:-4])
+    execCamo([d,m,n,o,s],outDir=directory,fn=baseDecomp[0].lower()[0:-4])
