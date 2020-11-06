@@ -34,16 +34,12 @@ def execCamo(imageAr,outDir="./",fn="gun"):
     occlusion = imageAr[3]
     specular = imageAr[4]
 
-    #invert camo mask
-    mask=mask.convert(mode="RGB")
-    ImageOps.invert(mask)
-    mask=mask.convert(mode="L")
-
     #diffuse=diffuse*ao*spec
+    #diffuse alpha = inv mask
     finalDiffuse = ImageChops.blend(diffuse.convert(mode="RGB"),specular.convert(mode="RGB"),0.25)
     finalDiffuse = ImageChops.multiply(finalDiffuse,occlusion.convert(mode="RGB"))
     finalDiffuse = finalDiffuse.convert(mode="RGBA")
-    finalDiffuse.putalpha(mask)
+    finalDiffuse.putalpha(ImageOps.invert(mask.convert(mode="RGB")).convert(mode="L"))
     finalDiffuse.save(os.path.join(outDir,"out",fn+"_d.tga"),"TGA")
 
     """
