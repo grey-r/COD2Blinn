@@ -28,19 +28,40 @@ def execCamo(imageAr,outDir="./",fn="gun"):
             imageAr[k] = im.resize((wMax,hMax), resample = PIL.Image.LANCZOS)
     
     #extract channels
-    diffuse = imageAr[0]
-    mask = imageAr[1]
-    normal = imageAr[2]
-    occlusion = imageAr[3]
+    diffuse = imageAr[0].convert(mode="RGB")
+    mask = imageAr[1].convert(mode="RGB")
+    normal = imageAr[2].convert(mode="RGB")
+    occlusion = imageAr[3].convert(mode="RGB")
     specular = imageAr[4]
+
+    #channel extraction
+    specSplit = specular.convert(mode="RGBA").split()
+    glossL = specSplit[3]
+    gloss = glossL.convert(mode="RGB")
+    specularRGB=specular.convert(mode="RGB")
+
+    #utils
+    white = Image.new("L", (wMax,hMax), (255))
+    black = Image.new("L", (wMax,hMax), (0))
 
     #diffuse=diffuse*ao*spec
     #diffuse alpha = inv mask
-    finalDiffuse = ImageChops.blend(diffuse.convert(mode="RGB"),specular.convert(mode="RGB"),0.25)
-    finalDiffuse = ImageChops.multiply(finalDiffuse,occlusion.convert(mode="RGB"))
+    finalDiffuse = ImageChops.blend(diffuse,specularRGB,0.25)
+    finalDiffuse = ImageChops.multiply(finalDiffuse,occlusion)
     finalDiffuse = finalDiffuse.convert(mode="RGBA")
-    finalDiffuse.putalpha(ImageOps.invert(mask.convert(mode="RGB")).convert(mode="L"))
+    finalDiffuse.putalpha(ImageOps.invert(mask).convert(mode="L"))
     finalDiffuse.save(os.path.join(outDir,"out",fn+"_d.tga"),"TGA")
+
+    #normal
+    #normal alpha = gloss*spec
+    finalNormal = normal.convert(mode="RGBA")
+    normalAlpha = ImageChops.multiply(ImageChops.multiply(specularRGB, gloss ), occlusion).convert(mode="L")
+    finalNormal.putalpha( normalAlpha )
+    finalNormal.save(os.path.join(outDir,"out",fn+"_n.tga"),"TGA")
+
+    #env={gloss,255,0,gloss*spec}
+    finalSpec = Image.merge("RGBA", [ glossL, white, black, normalAlpha ])
+    finalSpec.save(os.path.join(outDir,"out",fn+"_s.tga"),"TGA")
 
     """
     #split mask into components
