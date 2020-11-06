@@ -2,7 +2,7 @@ import sys, os.path
 
 try:
     import PIL
-    from PIL import Image
+    from PIL import Image, ImageOps, ImageChops
 except ImportError:
     sys.exit("""You need PIL!
                 install it from http://pypi.python.org/pypi/Pillow
@@ -13,7 +13,6 @@ def execCamo(imageAr,outDir="./",fn="gun"):
     finalOutDir = os.path.join(outDir,"out/")
     if not os.path.exists(finalOutDir):
         os.makedirs(finalOutDir)
-    """
 
     #get maximum sizes
     wMax = 0
@@ -35,6 +34,19 @@ def execCamo(imageAr,outDir="./",fn="gun"):
     occlusion = imageAr[3]
     specular = imageAr[4]
 
+    #invert camo mask
+    mask=mask.convert(mode="RGB")
+    ImageOps.invert(mask)
+    mask=mask.convert(mode="L")
+
+    #diffuse=diffuse*ao*spec
+    finalDiffuse = ImageChops.blend(diffuse.convert(mode="RGB"),specular.convert(mode="RGB"),0.25)
+    finalDiffuse = ImageChops.multiply(finalDiffuse,occlusion.convert(mode="RGB"))
+    finalDiffuse = finalDiffuse.convert(mode="RGBA")
+    finalDiffuse.putalpha(mask)
+    finalDiffuse.save(os.path.join(outDir,"out",fn+"_d.tga"),"TGA")
+
+    """
     #split mask into components
     maskSplit = mask.split()
     bloodMask = maskSplit[0] # unused
