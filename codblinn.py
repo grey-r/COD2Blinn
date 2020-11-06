@@ -89,28 +89,7 @@ def execCamo(imageAr,outDir="./",fn="gun"):
     finalMask.save(os.path.join(outDir,"out/mask.tga"),"TGA")
     """
     
-
-if __name__ == "__main__":
-    maskPath = ""
-    specPath = ""
-    nrmPath = ""
-
-    m=None
-    n=None
-    o=None
-    s=None
-
-    args = sys.argv
-    baseDiffusePath = None
-    if len(args)>=2:
-        baseDiffusePath=args[1]
-    else:
-        print("Input your diffuse texture path.")
-        baseDiffusePath=input()
-        if baseDiffusePath.startswith("\"") or baseDiffusePath.startswith("'"):
-            baseDiffusePath=baseDiffusePath[1:]
-        if baseDiffusePath.endswith("\"") or baseDiffusePath.endswith("'"):
-            baseDiffusePath=baseDiffusePath[0:-1]
+def runCamo(baseDiffusePath):
     if not os.path.isfile(baseDiffusePath):
         exit("THATS NO FILE")
     directory = os.path.dirname(baseDiffusePath)
@@ -202,3 +181,30 @@ if __name__ == "__main__":
         n=Image.new("RGB", (512,512), color=(128,128,255))
     print("Running for " + baseDecomp[0].lower()[0:-4])
     execCamo([d,m,n,o,s],outDir=directory,fn=baseDecomp[0].lower()[0:-4])
+if __name__ == "__main__":
+    maskPath = ""
+    specPath = ""
+    nrmPath = ""
+
+    m=None
+    n=None
+    o=None
+    s=None
+
+    args = sys.argv
+    baseDiffusePath = None
+    if len(args)>=2:
+        baseDiffusePath=args[1]
+    else:
+        print("Input your diffuse texture path.")
+        baseDiffusePath=input()
+        if baseDiffusePath.startswith("\"") or baseDiffusePath.startswith("'"):
+            baseDiffusePath=baseDiffusePath[1:]
+        if baseDiffusePath.endswith("\"") or baseDiffusePath.endswith("'"):
+            baseDiffusePath=baseDiffusePath[0:-1]
+    if os.path.isfile(baseDiffusePath) and not os.path.isdir(baseDiffusePath):
+        runCamo(baseDiffusePath)
+    elif os.path.isdir(baseDiffusePath):
+        for f in os.listdir(baseDiffusePath):
+            if f.endswith("_col.tga"):
+                runCamo(os.path.join(baseDiffusePath,f))
