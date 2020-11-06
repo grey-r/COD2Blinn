@@ -13,6 +13,7 @@ def exec5Stack(imageAr,outDir="./"):
     finalOutDir = os.path.join(outDir,"out/")
     if not os.path.exists(finalOutDir):
         os.makedirs(finalOutDir)
+    """
 
     #get maximum sizes
     wMax = 0
@@ -31,7 +32,8 @@ def exec5Stack(imageAr,outDir="./"):
     diffuse = imageAr[0]
     mask = imageAr[1]
     normal = imageAr[2]
-    specular = imageAr[3]
+    occlusion = imageAr[3]
+    specular = imageAr[4]
 
     #split mask into components
     maskSplit = mask.split()
@@ -85,6 +87,7 @@ def exec5Stack(imageAr,outDir="./"):
     white = Image.new("L", (wMax,hMax), color="white")
     finalMask = Image.merge("RGB", (PIL.ImageChops.multiply(gloss,gloss),white,white))
     finalMask.save(os.path.join(outDir,"out/mask.tga"),"TGA")
+    """
     
 
 if __name__ == "__main__":
@@ -94,6 +97,7 @@ if __name__ == "__main__":
 
     m=None
     n=None
+    o=None
     s=None
 
     args = sys.argv
@@ -112,26 +116,88 @@ if __name__ == "__main__":
     directory = os.path.dirname(baseDiffusePath)
     base=os.path.basename(baseDiffusePath)
     baseDecomp=os.path.splitext(base)
-    if baseDecomp[0].lower().endswith("_d"):
-        baseFN = baseDecomp[0][0:-2]
-        maskPath = os.path.join(directory,baseFN+"_M"+baseDecomp[1])
-        specPath = os.path.join(directory,baseFN+"_S"+baseDecomp[1])
-        nrmPath = os.path.join(directory,baseFN+"_N"+baseDecomp[1])
-    
+    occPath=""
+    specPath=""
+    nrmPath=""
+    maskPath=""
+    specSearch=[]
+    occSearch=[]
+    nrmSearch=[]
+    maskSearch=[]
+    if baseDecomp[0].lower().endswith("_col"):
+        baseFN = baseDecomp[0][0:-4]
+        #maskPath = os.path.join(directory,baseFN+"_mask_01"+baseDecomp[1])
+        #specPath = os.path.join(directory,baseFN+"_S"+baseDecomp[1])
+        #nrmPath = os.path.join(directory,baseFN+"_nml"+baseDecomp[1])
+        specSearch.append(baseFN+"_spc")
+        occSearch.append(baseFN+"_occ")
+        nrmSearch.append(baseFN+"_nml")
+        maskSearch.append(baseFN+"_mask")
+        if baseFN.find("frame"):
+            rep=baseFN.replace("frame","body")
+            specSearch.append(rep+"_spc")
+            occSearch.append(rep+"_occ")
+            nrmSearch.append(rep+"_nml")
+            maskSearch.append(rep+"_mask")
+        if baseFN.find("body"):
+            rep=baseFN.replace("body","frame")
+            specSearch.append(rep+"_spc")
+            occSearch.append(rep+"_occ")
+            nrmSearch.append(rep+"_nml")
+            maskSearch.append(rep+"_mask")
+    for f in os.listdir(directory):
+        found=False
+        for s in specSearch:
+            if (f.find(s)!=-1):
+                specPath = os.path.join(directory,f)
+                print("Found specular file: " + f)
+                found=True
+                break
+        if (found):
+            continue
+        for s in occSearch:
+            if (f.find(s)!=-1):
+                occPath = os.path.join(directory,f)
+                print("Found occlusion file: " + f)
+                found=True
+                break
+        if (found):
+            continue
+        for s in nrmSearch:
+            if (f.find(s)!=-1):
+                nrmPath = os.path.join(directory,f)
+                print("Found normal file: " + f)
+                found=True
+                break
+        if (found):
+            continue
+        for s in maskSearch:
+            if (f.find(s)!=-1):
+                maskPath = os.path.join(directory,f)
+                print("Found mask file: " + f)
+                found=True
+                break
+        if (found):
+            continue
     d = Image.open(baseDiffusePath)
     if os.path.isfile(maskPath):
         m=Image.open(maskPath)
     else:
         print("WARNING: MISSING MASK")
-        m=Image.new("RGB", (512,512), color=(192,64,255))
+        m=Image.new("RGB", (512,512), color=(0,0,0))
     if os.path.isfile(specPath):
         s=Image.open(specPath)
     else:
         print("WARNING: MISSING SPECULAR")
         s=Image.new("RGB", (512,512), color=(64,64,64))
+    if os.path.isfile(occPath):
+        o=Image.open(occPath)
+    else:
+        print("WARNING: MISSING OCCLUSION")
+        o=Image.new("RGB", (512,512), color=(255,255,255))
     if os.path.isfile(nrmPath):
         n=Image.open(nrmPath)
     else:
         print("WARNING: MISSING NORMALS")
         n=Image.new("RGB", (512,512), color=(128,128,255))
-    exec5Stack([d,m,n,s],outDir=directory)
+    exec5Stack([d,m,n,o,s],outDir=directory)
