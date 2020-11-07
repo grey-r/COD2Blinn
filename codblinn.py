@@ -2,6 +2,7 @@ import sys, os.path
 
 try:
     import PIL
+    import numpy as np
     from PIL import Image, ImageOps, ImageChops
 except ImportError:
     sys.exit("""You need PIL!
@@ -85,7 +86,17 @@ def execCamo(imageAr,outDir="./",fn="gun"):
     finalNormal.save(os.path.join(outDir,"out",fn+"_n.tga"),"TGA")
 
     #s={gloss,255,0,gloss*spec}
-    finalSpec = Image.merge("RGBA", [ glossL, white, black, normalAlpha ])
+    glossAr = np.array(gloss, dtype=np.uint8)
+
+    # Make a LUT (Look-Up Table) to translate image values
+    lut_in = [0, 162, 208, 255]
+    lut_out = [0, 16, 64, 255]
+    LUT=np.interp(np.arange(0, 256), lut_in, lut_out).astype(np.uint8)
+
+    # Apply LUT and cache resulting image
+    glossSource = Image.fromarray(LUT[glossAr]).convert(mode="L")
+
+    finalSpec = Image.merge("RGBA", [ glossSource, white, black, normalAlpha ])
     finalSpec.save(os.path.join(outDir,"out",fn+"_s.tga"),"TGA")
 
     #vmt
