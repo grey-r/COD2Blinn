@@ -3,7 +3,7 @@ import sys, os.path
 try:
     import PIL
     import numpy as np
-    from PIL import Image, ImageOps, ImageChops
+    from PIL import Image, ImageOps, ImageChops, ImageStat
 except ImportError:
     sys.exit("""You need PIL!
                 install it from http://pypi.python.org/pypi/Pillow
@@ -16,7 +16,7 @@ VMT = '''"VertexLitGeneric"
 	$phongexponenttexture	"models/weapons/tfa_cod/mwr/{name}_s"
 
 	$phong	"1"
-	$phongboost	"4"
+	$phongboost	"5"
 	$phongfresnelranges	"[.78 .9 1]"
 
 	// $detail "path/to/camo/pattern"
@@ -31,8 +31,16 @@ VMT = '''"VertexLitGeneric"
 	$rimlight	"1"
 	$rimmask	"1"
 	$rimlightboost	"1"
-	$rimlightexponent	"33"
+	$rimlightexponent	"2"
 }}'''
+
+def isGrayscale(img):
+	im = img.convert(mode="RGB")
+	stat = ImageStat.Stat(im)
+	if sum(stat.sum)/3 == stat.sum[0]:
+		return True
+	else:
+		return False
 
 def execCamo(imageAr,outDir="./",fn="gun"):
     #prepare output directory
@@ -90,7 +98,7 @@ def execCamo(imageAr,outDir="./",fn="gun"):
 
     # Make a LUT (Look-Up Table) to translate image values
     lut_in = [0, 162, 208, 255]
-    lut_out = [0, 16, 64, 255]
+    lut_out = [0, 16, 48, 255]
     LUT=np.interp(np.arange(0, 256), lut_in, lut_out).astype(np.uint8)
 
     # Apply LUT and cache resulting image
@@ -119,11 +127,38 @@ def runCamo(baseDiffusePath):
     occSearch=[]
     nrmSearch=[]
     maskSearch=[]
-    if baseDecomp[0].lower().endswith("_col"):
-        baseFN = baseDecomp[0][0:-4]
-        #maskPath = os.path.join(directory,baseFN+"_mask_01"+baseDecomp[1])
-        #specPath = os.path.join(directory,baseFN+"_S"+baseDecomp[1])
-        #nrmPath = os.path.join(directory,baseFN+"_nml"+baseDecomp[1])
+    baseFN=baseDecomp[0].lower()
+    if baseFN.endswith("_col"):
+        baseFN = baseFN[0:-4]
+    if baseFN.startswith("mtl_"):
+        baseFN = baseFN[4:]
+    #maskPath = os.path.join(directory,baseFN+"_mask_01"+baseDecomp[1])
+    #specPath = os.path.join(directory,baseFN+"_S"+baseDecomp[1])
+    #nrmPath = os.path.join(directory,baseFN+"_nml"+baseDecomp[1])
+    specSearch.append(baseFN+"_spc")
+    occSearch.append(baseFN+"_occ")
+    nrmSearch.append(baseFN+"_nml")
+    maskSearch.append(baseFN+"_mask")
+    if baseFN.find("frame"):
+        rep=baseFN.replace("frame","body")
+        specSearch.append(rep+"_spc")
+        occSearch.append(rep+"_occ")
+        nrmSearch.append(rep+"_nml")
+        maskSearch.append(rep+"_mask")
+    if baseFN.find("body"):
+        rep=baseFN.replace("body","frame")
+        specSearch.append(rep+"_spc")
+        occSearch.append(rep+"_occ")
+        nrmSearch.append(rep+"_nml")
+        maskSearch.append(rep+"_mask")
+    if baseFN.find("ie"):
+        rep=baseFN.replace("ie","ei")
+        specSearch.append(rep+"_spc")
+        occSearch.append(rep+"_occ")
+        nrmSearch.append(rep+"_nml")
+        maskSearch.append(rep+"_mask")
+    if baseFN.endswith("_base"):
+        baseFN = baseFN[0:-5]
         specSearch.append(baseFN+"_spc")
         occSearch.append(baseFN+"_occ")
         nrmSearch.append(baseFN+"_nml")
@@ -140,6 +175,13 @@ def runCamo(baseDiffusePath):
             occSearch.append(rep+"_occ")
             nrmSearch.append(rep+"_nml")
             maskSearch.append(rep+"_mask")
+        if baseFN.find("ie"):
+            rep=baseFN.replace("ie","ei")
+            specSearch.append(rep+"_spc")
+            occSearch.append(rep+"_occ")
+            nrmSearch.append(rep+"_nml")
+            maskSearch.append(rep+"_mask")
+    
     for f in os.listdir(directory):
         found=False
         for s in specSearch:
@@ -174,9 +216,26 @@ def runCamo(baseDiffusePath):
                 break
         if (found):
             continue
-    
+    if (len(specPath)<1 or len(occPath)<1):
+        for f in os.listdir(directory):
+            if (f.startswith("~") and f.find(baseFN)!=-1):
+                testPath=os.path.join(directory,f)
+                if (len(specPath)>0 and len(occPath)<1):
+                    occPath=testPath
+                elif (len(specPath)<1 and len(occPath)>0):
+                    specPath=testPath
+                else:
+                    im = Image.open(os.path.join(directory,f))
+                    if (not isGrayscale(im)):
+                        specPath=testPath
+                    else:
+                        occPath=testPath
+
     fnv = baseDecomp[0].lower()[0:-4]
     fnv = fnv.replace("frame","body")
+    if fnv.endswith("_base"):
+        fnv = fnv[0:-5]
+    fnv = fnv.replace("cie","cei")
     
     d = Image.open(baseDiffusePath)
     if os.path.isfile(maskPath):
