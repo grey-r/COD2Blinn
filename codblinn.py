@@ -8,6 +8,31 @@ except ImportError:
                 install it from http://pypi.python.org/pypi/Pillow
                 or run pip install Pillow.""")
 
+VMT = '''"VertexLitGeneric"
+{{
+	$basetexture	"models/weapons/tfa_cod/mwr/{name}_d"
+	$bumpmap	"models/weapons/tfa_cod/mwr/{name}_n"
+	$phongexponenttexture	"models/weapons/tfa_cod/mwr/{name}_s"
+
+	$phong	"1"
+	$phongboost	"4"
+	$phongfresnelranges	"[.78 .9 1]"
+
+	// $detail "path/to/camo/pattern"
+	// $detailblendmode	"4"
+	// $detailscale	"1"
+
+	$envmap	"env_cubemap"
+	$envmaptint	"[.25 .25 .25]"
+	$normalmapalphaenvmapmask	"1"
+	$envmapfresnel	"1"
+
+	$rimlight	"1"
+	$rimmask	"1"
+	$rimlightboost	"1"
+	$rimlightexponent	"33"
+}}'''
+
 def execCamo(imageAr,outDir="./",fn="gun"):
     #prepare output directory
     finalOutDir = os.path.join(outDir,"out/")
@@ -59,64 +84,15 @@ def execCamo(imageAr,outDir="./",fn="gun"):
     finalNormal.putalpha( normalAlpha )
     finalNormal.save(os.path.join(outDir,"out",fn+"_n.tga"),"TGA")
 
-    #env={gloss,255,0,gloss*spec}
+    #s={gloss,255,0,gloss*spec}
     finalSpec = Image.merge("RGBA", [ glossL, white, black, normalAlpha ])
     finalSpec.save(os.path.join(outDir,"out",fn+"_s.tga"),"TGA")
 
-    """
-    #split mask into components
-    maskSplit = mask.split()
-    bloodMask = maskSplit[0] # unused
-    gloss = maskSplit[1]
-    ao = maskSplit[2]   
-    emissive = envRGBTMP=Image.new("L", (wMax,hMax), color=0)
-    if len(maskSplit)>3:
-        emissive=maskSplit[3]
+    #vmt
+    vmtFile = open(os.path.join(outDir,"out","mtl_"+fn+".vmt"), 'w')
+    vmtFile.write(VMT.format(name=fn))
+    vmtFile.close()
 
-    #composite final textures
-
-
-    #diffuse=diffuse*ao
-    finalDiffuse = PIL.ImageChops.multiply(diffuse.convert(mode="RGB"),ao.convert(mode="RGB")).convert(mode="RGBA")
-    finalDiffuse.putalpha(emissive)
-    finalDiffuse.save(os.path.join(outDir,"out/dif.tga"),"TGA")
- 
-    #envMasks=spec*spec*ao
-    env = PIL.ImageChops.multiply(specular.convert(mode="RGB"),specular.convert(mode="RGB"))
-    env = PIL.ImageChops.multiply(env,ao.convert(mode="RGB"))
-    #split env into channels
-    envSplit = env.split()
-    envRed = envSplit[0]
-    envGreen = envSplit[1]
-    envBlue = envSplit[2]
-    #save each env channel as rgba
-    envRGBTMP=Image.new("RGBA", (wMax,hMax), color=0)
-    #r
-    envRGBTMP.putalpha(envRed)
-    envRGBTMP.save(os.path.join(outDir,"out/env_r.tga"),"TGA")
-    #g
-    envRGBTMP.putalpha(envGreen)
-    envRGBTMP.save(os.path.join(outDir,"out/env_g.tga"),"TGA")
-    #b
-    envRGBTMP.putalpha(envBlue)
-    envRGBTMP.save(os.path.join(outDir,"out/env_b.tga"),"TGA")
-
-    #normals
-    #normal alpha = gloss - used for fresnel
-    normalAlpha = gloss.convert(mode="L")
-    finalNormal = normal.convert(mode="RGBA")
-    finalNormal.putalpha(normalAlpha)
-    finalNormal.save(os.path.join(outDir,"out/norm.tga"),"TGA")
-
-    #spec = spec???? lol
-    finalSpec = specular.convert(mode="RGB")
-    finalSpec.save(os.path.join(outDir,"out/spec.tga"),"TGA")
-
-    #mask
-    white = Image.new("L", (wMax,hMax), color="white")
-    finalMask = Image.merge("RGB", (PIL.ImageChops.multiply(gloss,gloss),white,white))
-    finalMask.save(os.path.join(outDir,"out/mask.tga"),"TGA")
-    """
     
 def runCamo(baseDiffusePath):
     if not os.path.isfile(baseDiffusePath):
@@ -187,9 +163,14 @@ def runCamo(baseDiffusePath):
                 break
         if (found):
             continue
+    
+    fnv = baseDecomp[0].lower()[0:-4]
+    fnv = fnv.replace("frame","body")
+    
     d = Image.open(baseDiffusePath)
     if os.path.isfile(maskPath):
         m=Image.open(maskPath)
+        fnv=fnv+"_camo"
     else:
         print("WARNING: MISSING MASK")
         m=Image.new("RGB", (512,512), color=(0,0,0))
@@ -208,8 +189,8 @@ def runCamo(baseDiffusePath):
     else:
         print("WARNING: MISSING NORMALS")
         n=Image.new("RGB", (512,512), color=(128,128,255))
-    print("Running for " + baseDecomp[0].lower()[0:-4])
-    execCamo([d,m,n,o,s],outDir=directory,fn=baseDecomp[0].lower()[0:-4])
+    print("Running for " + fnv)
+    execCamo([d,m,n,o,s],outDir=directory,fn=fnv)
 if __name__ == "__main__":
     maskPath = ""
     specPath = ""
