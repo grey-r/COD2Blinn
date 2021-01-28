@@ -2,12 +2,17 @@ import sys, os.path
 
 try:
     import PIL
-    import numpy as np
     from PIL import Image, ImageOps, ImageChops, ImageStat
 except ImportError:
     sys.exit("""You need PIL!
                 install it from http://pypi.python.org/pypi/Pillow
                 or run pip install Pillow.""")
+try:
+    import numpy as np
+except ImportError:
+    sys.exit("""You need NumPy!
+                install it from http://pypi.python.org/pypi/numpy
+                or run pip install numpy.""")
 
 VMT = '''"VertexLitGeneric"
 {{
